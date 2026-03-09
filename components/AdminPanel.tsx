@@ -110,14 +110,11 @@ export const AdminPanel: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-      const result = await res.json();
-      if (result.success) {
-        localStorage.setItem('admin_token', result.token);
+      // Client-side password check (no Express server on Vercel)
+      const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
+      if (password === adminPassword) {
+        const token = btoa(password);
+        localStorage.setItem('admin_token', token);
         setIsAuthenticated(true);
         setLoginError('');
       } else {
@@ -141,14 +138,13 @@ export const AdminPanel: React.FC = () => {
       if (docSnap.exists()) {
         setData(docSnap.data() as AppData);
       } else {
-        // Fallback to API if Firestore is empty
-        const res = await fetch('/api/portfolio');
-        const jsonData = await res.json();
-        setData(jsonData);
+        // Firestore is empty — start with blank data
+        console.warn('No data found in Firestore. Starting with empty state.');
+        setData({ portfolio: [], pricing: [] });
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
-      setMessage({ text: 'Failed to load data', type: 'error' });
+      setMessage({ text: 'Failed to load data from Firebase', type: 'error' });
     } finally {
       setLoading(false);
     }
